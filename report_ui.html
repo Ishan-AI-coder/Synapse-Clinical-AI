@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Health Report Checker — Quick Symptom & Referral Helper</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    /* Styling remains the same as your beautiful design */
+    .designer-card { position: fixed; bottom: 20px; right: 20px; background-color: #000; color: #fff; padding: 8px 15px; border-radius: 8px; font-size: 14px; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: default; z-index: 1000; }
+    :root { --bg:#f6f8fb; --card:#ffffff; --accent:#0b5fff; --muted:#6b7280; --text:#0f172a; --success:#10b981; --danger:#ef4444; --warning:#f59e0b; }
+    body { background-image: linear-gradient(120deg, rgba(224,247,250,0.2), rgba(255,255,255,0.1), rgba(224,247,250,0.2)), url('images/bgrnd.png'); background-size: 400% 400%, cover; background-attachment: fixed, fixed; background-position: center, center; background-repeat: no-repeat, no-repeat; font-family: 'Roboto', sans-serif; color: var(--text); margin: 0; padding: 0; }
+    .wrap { max-width:900px; margin:28px auto; padding:20px; }
+    header { display:flex; gap:16px; align-items:center; }
+    h1, h2, h3 { margin:0; }
+    h1.site-title { text-align: center; font-size: 2rem; font-weight: 700; background: linear-gradient(90deg, #0b5fff, #10b981); -webkit-background-clip: text; -moz-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 1px; margin-top: 20px; margin-bottom: 4px; }
+    p.lead { margin:6px 0 20px; color: var(--muted); font-weight: normal;}
+    .card { background: linear-gradient(135deg, #e0f7fa, #ffffff); border-radius: 14px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); padding: 20px; margin-bottom: 18px; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .pale-yellow-card { background: linear-gradient(135deg, #fff8dc, #ffffff); border-radius: 14px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
+    .card:hover, .pale-yellow-card:hover, .upload-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12); }
+    .upload-card { background: linear-gradient(135deg, #fff8f0, #ffffff); max-width: 900px; margin: 20px auto; }
+    .upload-card h2 { text-align: center; margin-bottom: 12px; font-weight: 600; }
+    .upload-controls { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 12px; align-items: center; }
+    .upload-controls input[type="file"] { border: 2px dashed #0b5fff; border-radius: 12px; padding: 12px 16px; background: #f0faff; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
+    .upload-controls input[type="file"]:hover { background: #e0f7fa; border-color: #10b981; }
+    .upload-controls button { background: #0b5fff; color: white; border: none; padding: 12px 18px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s; }
+    .upload-controls button:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(11, 95, 255, 0.3); opacity: 0.95; }
+    #uploadStatus { color: var(--muted); text-align: center; margin-top: 8px; font-weight: bold;}
+    label { display:block; font-weight:600; margin:8px 0 6px; font-size: 14px;}
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+    input[type="number"], input[type="text"], select { padding:8px 10px; border:1px solid #e6e9ef; border-radius:8px; min-width:140px; font-family: inherit; }
+    .param { flex:1 1 140px; }
+    button.action-btn { background: var(--accent); color:white; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; transition:0.2s; font-weight: bold; }
+    button.action-btn:hover { opacity:0.9; }
+    .results { margin-top:12px; font-weight: normal;}
+    table { width:100%; border-collapse:collapse; margin-top:8px; background: #fff; border-radius: 8px; overflow: hidden;}
+    th, td { padding:10px; border-bottom:1px solid #eef2f7; text-align:left; font-size: 14px;}
+    th { background-color: #f8fafc; font-weight: bold; }
+    small { color:var(--muted); font-weight: normal;}
+    .actions { display:flex; gap:8px; align-items:center; margin-top:20px; flex-wrap:wrap; }
+    @media (max-width:640px) { .row { flex-direction:column; } .param { min-width:unset; } }
+  </style>
+</head>
+<body>
+
+<h1 class="site-title">🩺 Health Dev</h1>
+
+<section class="card upload-card">
+  <h2>Gemini AI Data Extraction</h2>
+  <div class="upload-controls">
+   <input type="file" id="reportFile" accept=".pdf,image/*" aria-label="Upload report file" />
+    <button type="button" onclick="processFile()">Upload & Scan with AI</button>
+  </div>
+  <p id="uploadStatus">Select a physical lab report image or PDF</p>
+</section>
+
+<div class="wrap">
+  <header>
+    <div class="card pale-yellow-card" style="width: 100%;">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2v20M2 12h20" stroke="#0b5fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <h1>Health Report Checker</h1>
+        <p class="lead">Values → Status (low/normal/high), typical symptoms and suggested specialist.</p>
+      </div>
+    </div>
+  </header>
+
+  <section class="card" style="background-color:#f0ffff;">
+    <h2>Patient & Report Details</h2>
+    <div class="row">
+      <div class="param"><label for="name">Name</label><input id="name" type="text" /></div>
+      <div class="param"><label for="age">Age</label><input id="age" type="number" min="0" /></div>
+      <div class="param">
+        <label for="sex">Sex</label>
+        <select id="sex">
+          <option value="unspecified">Unspecified</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
+    </div>
+
+    <hr style="margin:25px 0; border: none; border-top: 1px solid #e2e8f0;" />
+
+    <h3>Enter lab values (use units shown)</h3>
+    <small>Leave blank if unavailable. Uses general adult reference ranges (educational only).</small>
+
+    <div style="margin-top:15px">
+      <div class="row">
+        <div class="param"><label>Hemoglobin (g/dL)</label><input id="hb" type="number" step="0.1" /></div>
+        <div class="param"><label>WBC (10^9/L)</label><input id="wbc" type="number" step="0.1" /></div>
+        <div class="param"><label>Platelets (10^9/L)</label><input id="plt" type="number" step="1" /></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="param"><label>Fasting Glucose (mg/dL)</label><input id="glu" type="number" step="1" /></div>
+        <div class="param"><label>TSH (mIU/L)</label><input id="tsh" type="number" step="0.01" /></div>
+        <div class="param"><label>LDL Cholesterol (mg/dL)</label><input id="ldl" type="number" step="1" /></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="param"><label>Serum Creatinine (mg/dL)</label><input id="cr" type="number" step="0.01" /></div>
+        <div class="param"><label>Urea (mg/dL)</label><input id="urea" type="number" step="0.1" /></div>
+        <div class="param"><label>C-reactive protein (mg/L)</label><input id="crp" type="number" step="0.1" /></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="param"><label>HDL (mg/dL)</label><input id="hdl" type="number" step="1" /></div>
+        <div class="param"><label>Triglycerides (mg/dL)</label><input id="tg" type="number" step="1" /></div>
+        <div class="param"><label>Bilirubin (mg/dL)</label><input id="bilirubin" type="number" step="0.1" /></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="param"><label>Potassium (mmol/L)</label><input id="potassium" type="number" step="0.1" /></div>
+        <div class="param"><label>Calcium (mg/dL)</label><input id="calcium" type="number" step="0.1" /></div>
+        <div class="param"><label>Vitamin D (ng/mL)</label><input id="vitamind" type="number" step="1" /></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="param"><label>Vitamin B12 (pg/mL)</label><input id="b12" type="number" step="1" /></div>
+        <div class="param"><label>Ferritin (ng/mL)</label><input id="ferritin" type="number" step="1" /></div>
+        <div class="param"><label>Folate (ng/mL)</label><input id="folate" type="number" step="0.1" /></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="param"><label>Magnesium (mg/dL)</label><input id="magnesium" type="number" step="0.1" /></div>
+        <div class="param"><label>Custom (name:value)</label><input id="custom" type="text" placeholder="e.g. ALT:45" /></div>
+      </div>
+
+      <div class="actions">
+        <button id="check" class="action-btn">Check Report</button>
+        <button id="clear" class="action-btn" style="background:#e6e9ef;color:#0b1220">Clear</button>
+        <button id="download" class="action-btn" style="background:#10b981;">Download Results (JSON)</button>
+        <button id="downloadPDF" class="action-btn" style="background:#0b6fff;">Download Results (PDF)</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Results</h2>
+    <div id="results" class="results">
+      <p class="lead">No report checked yet.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Notes</h2>
+    <ul style="font-weight: normal; line-height: 1.6;">
+      <li>This tool uses <strong>general adult reference ranges</strong>. Real ranges differ by lab method, age, pregnancy, and comorbidities.</li>
+      <li>It only suggests possible symptoms and the type of specialist to consult. <strong>Not a diagnostic tool.</strong></li>
+      <li>For critical or abnormal values, contact a doctor or emergency services immediately.</li>
+    </ul>
+  </section>
+  <footer style="text-align:center;color:var(--muted);font-size:13px;margin-top:8px; margin-bottom: 40px;">Made for rapid prototyping</footer>
+</div>
+
+<div class="designer-card">By : The Chaotic 4</div>
+
+<script>
+  const API_URL = "{{API_URL}}"; 
+  const SECURE_TOKEN = "{{TOKEN}}";
+
+  async function processFile() {
+    const fileInput = document.getElementById('reportFile');
+    const file = fileInput.files[0];
+    const status = document.getElementById('uploadStatus');
+
+    if(!file){ alert('Please select a file first.'); return; }
+    
+    status.innerText = '📡 Securely transmitting to Gemini Vision Engine...';
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        const response = await fetch(`${API_URL}/api/ocr/extract`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${SECURE_TOKEN}` },
+            body: formData
+        });
+
+        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+        
+        const result = await response.json();
+        const data = result.data;
+
+        // Auto-fill the patient details
+        if(data.name) document.getElementById('name').value = data.name;
+        if(data.age) document.getElementById('age').value = data.age;
+        if(data.sex) document.getElementById('sex').value = data.sex.toLowerCase();
+
+        // Auto-fill the extracted lab metrics safely
+        const fieldMapping = ['hb', 'wbc', 'plt', 'glu', 'tsh', 'ldl', 'hdl', 'tg', 'cr', 'urea', 'bilirubin', 'potassium', 'calcium', 'vitamind', 'b12', 'ferritin', 'folate', 'magnesium', 'crp'];
+        
+        fieldMapping.forEach(key => {
+            if (data[key] !== null && data[key] !== undefined) {
+                const input = document.getElementById(key);
+                if (input) input.value = data[key];
+            }
+        });
+
+        status.innerText = '✅ AI Extraction Complete. Values populated and standardized.';
+
+    } catch(err){
+        console.error(err);
+        status.innerText = '❌ Extraction failed. Please ensure the backend server is running.';
+    }
+  }
+
+  // --- Reference & PDF Code from Previous Versions Remains Exactly the Same Below ---
+  const REFERENCE = {
+    Hb: {name:'Hemoglobin', unit:'g/dL', low:13.5, high:17.5, sexAdjust:{female:{low:12,high:15.5}}, symptoms:{low:['Fatigue','Pallor','Dizziness'],high:['Headache','Flushed face']}, doctor:'Hematologist / GP'},
+    WBC: {name:'WBC', unit:'10^9/L', low:4, high:11, symptoms:{low:['Infections risk'],high:['Fever','Inflammation']}, doctor:'GP / Infectious Disease'},
+    PLT: {name:'Platelets', unit:'10^9/L', low:150, high:450, symptoms:{low:['Bruising','Bleeding gums'],high:['Thrombosis risk']}, doctor:'Hematologist'},
+    GLU: {name:'Fasting Glucose', unit:'mg/dL', low:70, high:99, symptoms:{low:['Sweating','Shakiness'],high:['Polyuria','Fatigue']}, doctor:'Endocrinologist'},
+    TSH: {name:'TSH', unit:'mIU/L', low:0.4, high:4, symptoms:{low:['Palpitations'],high:['Fatigue','Weight gain']}, doctor:'Endocrinologist'},
+    CR: {name:'Serum Creatinine', unit:'mg/dL', low:0.6, high:1.3, symptoms:{high:['Reduced urine','Fatigue']}, doctor:'Nephrologist'},
+    LDL: {name:'LDL Cholesterol', unit:'mg/dL', low:0, high:100, symptoms:{high:['Atherosclerosis risk']}, doctor:'Cardiologist'},
+    HDL: {name:'HDL Cholesterol', unit:'mg/dL', low:40, high:Infinity, symptoms:{low:['Higher risk of heart disease']}, doctor:'Cardiologist'},
+    TG: {name:'Triglycerides', unit:'mg/dL', low:0, high:150, symptoms:{high:['Pancreatitis risk','Metabolic syndrome']}, doctor:'Cardiologist'},
+    Bilirubin: {name:'Bilirubin', unit:'mg/dL', low:0.2, high:1.2, symptoms:{high:['Yellow eyes','Yellow skin','Dark urine']}, doctor:'Gastroenterologist'},
+    Urea: {name:'Urea', unit:'mg/dL', low:15, high:40, symptoms:{high:['Swelling','Confusion','Fatigue']}, doctor:'Nephrologist'},
+    Potassium: {name:'Potassium', unit:'mmol/L', low:3.5, high:5.0, symptoms:{low:['Muscle weakness','Cramps']}, doctor:'Nephrologist'},
+    Calcium: {name:'Calcium', unit:'mg/dL', low:8.5, high:10.5, symptoms:{low:['Muscle cramps','Tingling']}, doctor:'Endocrinologist'},
+    VitaminD: {name:'Vitamin D', unit:'ng/mL', low:20, high:80, symptoms:{low:['Bone pain','Muscle weakness']}, doctor:'Endocrinologist'},
+    B12: {name:'Vitamin B12', unit:'pg/mL', low:200, high:900, symptoms:{low:['Anemia','Numbness','Fatigue']}, doctor:'Hematologist'},
+    Ferritin: {name:'Ferritin', unit:'ng/mL', low:30, high:400, symptoms:{low:['Iron deficiency','Fatigue']}, doctor:'Hematologist'},
+    Folate: {name:'Folic Acid', unit:'ng/mL', low:3, high:17, symptoms:{low:['Mouth sores','Weakness']}, doctor:'Hematologist'},
+    Magnesium: {name:'Magnesium', unit:'mg/dL', low:1.6, high:2.6, symptoms:{low:['Cramps','Arrhythmia']}, doctor:'GP'},
+    CRP: {name:'C-reactive protein', unit:'mg/L', low:0, high:5, symptoms:{high:['Fever','Inflammation']}, doctor:'GP / Rheumatologist'}
+  };
+
+  const DEFICIENCY_CONDITIONS = [
+    { keys: ['Hb'], description: 'Low hemoglobin may indicate anemia, chronic disease, or blood loss.' },
+    { keys: ['WBC'], description: 'Abnormal WBC may suggest infection, inflammation, or bone marrow disorders.' },
+    { keys: ['PLT'], description: 'Abnormal platelet count may indicate bleeding disorder, thrombocytopenia, or thrombocytosis.' },
+    { keys: ['Hb','WBC','PLT'], description: 'Combination of low Hb, WBC, and platelets may indicate aplastic anemia, bone marrow suppression, or severe nutritional deficiency.' },
+    { keys: ['Hb','Ferritin','B12','Folate'], description: 'Deficiencies in Hb, Ferritin, B12, or Folate suggest iron deficiency anemia or megaloblastic anemia.' },
+    { keys: ['GLU'], description: 'Abnormal fasting glucose may indicate diabetes or impaired glucose tolerance.' },
+    { keys: ['TSH'], description: 'Abnormal TSH may indicate hypothyroidism or hyperthyroidism.' },
+    { keys: ['GLU','LDL','TG'], description: 'Combination of abnormal glucose, LDL, or triglycerides may indicate metabolic syndrome or cardiovascular risk.' },
+    { keys: ['LDL','HDL','TG'], description: 'Abnormal lipid profile may indicate dyslipidemia or increased risk of atherosclerosis.' },
+    { keys: ['CR','Urea','Potassium'], description: 'Abnormal creatinine, urea, or potassium may indicate kidney dysfunction or electrolyte imbalance.' },
+    { keys: ['Bilirubin'], description: 'High bilirubin may indicate liver dysfunction, hepatitis, or bile duct obstruction.' },
+    { keys: ['VitaminD','Calcium','Magnesium'], description: 'Low vitamin D, calcium, or magnesium may indicate bone mineralization issues or risk of osteoporosis.' },
+    { keys: ['B12','Folate'], description: 'Low B12 or Folate may indicate megaloblastic anemia or nutritional deficiencies.' },
+    { keys: ['CRP'], description: 'High CRP suggests inflammation, infection, or autoimmune response.' }
+  ];
+
+  function generateConclusion(report){
+    const findings = []; const readings = report.readings || {};
+    DEFICIENCY_CONDITIONS.forEach(cond=>{
+      const present = cond.keys.every(k => readings[k] && readings[k].present && readings[k].status !== 'normal');
+      if(present){ findings.push(cond.description); }
+    });
+    return findings.slice(0,4);
+  }
+
+  function parseCustom(str){
+    if(!str) return null; const parts = str.split(':'); if(parts.length<2) return null;
+    return {key: parts[0].trim(), val: parseFloat(parts[1])};
+  }
+
+  function checkValue(key, value, sex){
+    const ref = REFERENCE[key]; if(!ref) return null;
+    let low = ref.low, high = ref.high;
+    if(sex && ref.sexAdjust && ref.sexAdjust[sex]){ low = ref.sexAdjust[sex].low; high = ref.sexAdjust[sex].high; }
+    if(value===null || isNaN(value)) return {present:false};
+    let status='normal'; if(value<low) status='low'; else if(value>high) status='high';
+    return {present:true,key,name:ref.name,unit:ref.unit,value,low,high,status,symptoms:ref.symptoms,doctor:ref.doctor};
+  }
+
+  function renderResults(report){
+    const el = document.getElementById('results'); el.innerHTML='';
+    if(Object.keys(report.readings||{}).length===0){ el.innerHTML='<p class="lead">No report checked yet.</p>'; return; }
+
+    const summary = document.createElement('div');
+    summary.innerHTML = `<strong>Patient:</strong> ${report.patient||'—'} &nbsp; <small>Age: ${report.age||'—'} Sex: ${report.sex||'—'}</small>`; el.appendChild(summary);
+
+    const table = document.createElement('table');
+    table.innerHTML='<thead><tr><th>Test</th><th>Value</th><th>Status</th><th>Normal Range</th><th>Symptoms</th><th>Suggested Specialist</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+
+    for(const k of Object.keys(report.readings)){
+      const r = report.readings[k]; if(!r.present) continue;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.name}${r.unit?` (${r.unit})`:''}</td><td>${r.value}</td>
+        <td style="font-weight:700;color:${r.status==='normal'? '#047857': r.status==='high'? '#b91c1c':'#a16207'}">${r.status.toUpperCase()}</td>
+        <td>${r.low} - ${r.high}</td><td>${r.symptoms && r.symptoms[r.status]? r.symptoms[r.status].slice(0,3).join(', '):'—'}</td><td>${r.doctor}</td>`;
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody); el.appendChild(table);
+
+    if(report.conclusion && report.conclusion.length){
+      const conclDiv = document.createElement('div');
+      conclDiv.style.marginTop = '15px'; conclDiv.style.background = '#fffbdd'; conclDiv.style.padding = '12px 15px'; conclDiv.style.borderRadius = '8px'; conclDiv.style.borderLeft = '4px solid #f59e0b';
+      conclDiv.innerHTML = `<strong>Conclusion / Possible Conditions:</strong><ul style="margin-bottom:0;">${report.conclusion.map(c=>`<li>${c}</li>`).join('')}</ul>`;
+      el.appendChild(conclDiv);
+    }
+  }
+
+  function collectAndCheck(){
+    const sex = document.getElementById('sex').value;
+    const raw = {
+      Hb: parseFloat(document.getElementById('hb').value), WBC: parseFloat(document.getElementById('wbc').value),
+      PLT: parseFloat(document.getElementById('plt').value), GLU: parseFloat(document.getElementById('glu').value),
+      TSH: parseFloat(document.getElementById('tsh').value), LDL: parseFloat(document.getElementById('ldl').value),
+      CR: parseFloat(document.getElementById('cr').value), HDL: parseFloat(document.getElementById('hdl').value),
+      TG: parseFloat(document.getElementById('tg').value), Bilirubin: parseFloat(document.getElementById('bilirubin').value),
+      Urea: parseFloat(document.getElementById('urea')?.value), Potassium: parseFloat(document.getElementById('potassium').value),
+      Calcium: parseFloat(document.getElementById('calcium').value), VitaminD: parseFloat(document.getElementById('vitamind').value),
+      B12: parseFloat(document.getElementById('b12').value), Ferritin: parseFloat(document.getElementById('ferritin').value),
+      Folate: parseFloat(document.getElementById('folate').value), Magnesium: parseFloat(document.getElementById('magnesium').value),
+      CRP: parseFloat(document.getElementById('crp').value)
+    };
+
+    const custom = parseCustom(document.getElementById('custom').value);
+    const report={patient:document.getElementById('name').value, age:document.getElementById('age').value, sex:sex, timestamp:new Date().toISOString(), readings:{}};
+
+    for(const k of Object.keys(raw)){ const res = checkValue(k, raw[k], sex==='female'? 'female': undefined); if(res) report.readings[k]=res; }
+    if(custom){ report.readings[custom.key]={present:true,name:custom.key,unit:'(custom)',value:custom.val,low:'n/a',high:'n/a',status:'custom',symptoms:[],doctor:'GP'} }
+
+    report.conclusion = generateConclusion(report); renderResults(report); window.__LAST_REPORT = report;
+  }
+
+  document.getElementById('check').addEventListener('click', collectAndCheck);
+  document.getElementById('clear').addEventListener('click', () => { document.querySelectorAll('input[type="number"], input[type="text"]').forEach(i => i.value=''); document.getElementById('results').innerHTML='<p class="lead">No report checked yet.</p>'; window.__LAST_REPORT = null; document.getElementById('uploadStatus').innerText = 'Select a physical lab report image or PDF'; });
+  document.getElementById('download').addEventListener('click', () => { const r = window.__LAST_REPORT || {}; const blob = new Blob([JSON.stringify(r, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = (r.patient ? r.patient.replace(/\s+/g,'_')+'_report.json' : 'report.json'); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
+  document.getElementById('downloadPDF').addEventListener('click', () => {
+    const { jsPDF } = window.jspdf; const doc = new jsPDF(); const report = window.__LAST_REPORT; 
+    if(!report){ alert('No report available to download! Click "Check Report" first.'); return; }
+    let y = 10; doc.setFontSize(16); doc.text(`Health Report Analysis - ${report.patient || 'Anonymous'}`, 10, y); y += 10;
+    doc.setFontSize(11); doc.text(`Age: ${report.age || '—'} | Sex: ${report.sex || '—'} | Date: ${new Date(report.timestamp).toLocaleDateString()}`, 10, y); y += 15;
+    const readings = report.readings || {};
+    for(const key of Object.keys(readings)){
+      const r = readings[key]; if(!r.present) continue;
+      doc.setFont(undefined, 'bold'); doc.text(`${r.name}: ${r.value} ${r.unit || ''} [${r.status.toUpperCase()}]`, 10, y); y += 6;
+      doc.setFont(undefined, 'normal'); if(r.symptoms && r.symptoms[r.status]){ doc.text(`Associated Symptoms: ${r.symptoms[r.status].slice(0,3).join(', ')}`, 14, y); y += 6; }
+      doc.text(`Suggested Specialist: ${r.doctor}`, 14, y); y += 10;
+      if(y > 270){ doc.addPage(); y = 10; }
+    }
+    if(report.conclusion && report.conclusion.length){ doc.setFont(undefined, 'bold'); doc.text('Conclusion / Possible Conditions:', 10, y); doc.setFont(undefined, 'normal'); y += 7; report.conclusion.forEach(c => { doc.text('- ' + c, 14, y); y += 7; if(y > 270){ doc.addPage(); y = 10; } }); }
+    doc.save(`${report.patient ? report.patient.replace(/\s+/g,'_')+'_report.pdf' : 'report.pdf'}`);
+  });
+</script>
+</body>
+</html>

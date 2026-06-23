@@ -1,0 +1,33 @@
+[project]
+name = "Synapse Clinical AI"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "bcrypt>=5.0.0",
+    "duckduckgo-search>=8.1.1",
+    "fastapi>=0.136.3",
+    "fastembed>=0.8.0",
+    "feedparser>=6.0.12",
+    "langchain>=1.3.2",
+    "langchain-cohere>=0.5.1",
+    "langchain-community>=0.4.2",
+    "langchain-core>=1.4.0",
+    "langchain-google-genai>=4.2.3",
+    "langchain-qdrant>=1.1.0",
+    "langgraph>=1.2.2",
+    "passlib[bcrypt]>=1.7.4",
+    "psycopg2-binary>=2.9.12",
+    "pydantic>=2.13.4",
+    "python-dotenv>=1.2.2",
+    "python-jose[cryptography]>=3.5.0",
+    "python-multipart>=0.0.29",
+    "qdrant-client>=1.18.0",
+    "requests>=2.34.2",
+    "sqlalchemy>=2.0.50",
+    "streamlit>=1.37",
+    "tavily>=1.1.0",
+    "tavily-python>=0.7.25",
+    "uvicorn>=0.48.0",
+]
