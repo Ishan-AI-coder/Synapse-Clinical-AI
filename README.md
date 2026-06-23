@@ -156,6 +156,14 @@ Searches trusted medical literature in real time using Tavily and integrates cur
 
 ---
 
+## 🚀 Platform Walkthrough
+
+Experience the complete Synapse Clinical AI workflow—from secure authentication and patient management to AI-powered documentation and intelligent laboratory analysis.
+
+[![Synapse Clinical AI Platform Walkthrough](Images/Synapse_ai_thumbnail.png)](./Platform_walkthrough.md)
+
+### Click on the image for the application preview
+
 # ⚡ End-to-End Clinical Workflow
 
 | Step | AI Process |
@@ -272,18 +280,6 @@ The report analyzer then
 - Protected patient records
 
 ---
-
-# 🎬 Project Demonstration
-
-<p align="center">
-
-<a href="YOUR_VIDEO_LINK">
-
-<img src="Thumbnail.png" width="90%">
-
-</a>
-
-### ▶️ Click the image above to watch the complete walkthrough
 
 </p>
 
